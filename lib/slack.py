@@ -97,7 +97,9 @@ class SlackClient:
             messages_info.extend(result["messages"])
 
         # Filter for human messages only
-        messages = list(filter(lambda m: "subtype" not in m, messages_info))
+        # messages = list(filter(lambda m: "subtype" not in m, messages_info))
+        # → ニュースボットは人間ではないのでこのフィルタは不要
+        messages = messages_info
 
         if len(messages) < 1:
             return None
@@ -105,11 +107,15 @@ class SlackClient:
         messages_text = []
         for message in messages[::-1]:
             # Ignore bot messages and empty messages
-            if "bot_id" in message or len(message["text"].strip()) == 0:
-                continue
+            # → 不要
+            # if "bot_id" in message or len(message["text"].strip()) == 0:
+            #     continue
 
             # Get speaker name
-            speaker_name = self.get_user_name(message["user"]) or "somebody"
+            if "user" in message:
+                speaker_name = self.get_user_name(message["user"]) or "somebody"
+            else:
+                speaker_name = "News"
 
             # Get message body from result dict.
             body_text = message["text"].replace("\n", "\\n")
@@ -236,7 +242,7 @@ class SlackClient:
         try:
             self._wait_api_call()
             result = retry(lambda: self.client.conversations_list(
-                types="public_channel", exclude_archived=True, limit=1000),
+                types="public_channel,private_channel", exclude_archived=True, limit=1000),
                            exception=SlackApiError)
             channels_info = [
                 channel for channel in result['channels']

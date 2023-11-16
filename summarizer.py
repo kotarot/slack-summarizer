@@ -41,17 +41,17 @@ def summarize(text: str, language: str = "Japanese"):
                 'The chat log format consists of one line per message in the format "Speaker: Message".',
                 "The `\\n` within the message represents a line break."
                 f'The user understands {language} only.',
-                f'So, The assistant need to speak in {language}.',
+                f'The assistant needs to speak in {language}.',
             ])
         }, {
             "role":
             "user",
             "content":
             "\n".join([
-                f"Please meaning summarize the following chat log to flat bullet list in {language}.",
-                "It isn't line by line summary.",
-                "Do not include greeting/salutation/polite expressions in summary.",
-                "With make it easier to read."
+                f"Please summarize the following news log to flat bullet list in {language}.",
+                # "It isn't line by line summary.",
+                "Do not include greeting, salutation, and polite expressions in summary.",
+                "Make it easier to read."
                 f"Write in {language}.", "", text
             ])
         }])
@@ -154,6 +154,7 @@ def split_messages_by_token_count(messages: list[str]) -> list[list[str]]:
 OPEN_AI_TOKEN = str(os.environ.get('OPEN_AI_TOKEN')).strip()
 SLACK_BOT_TOKEN = str(os.environ.get('SLACK_BOT_TOKEN')).strip()
 CHANNEL_ID = str(os.environ.get('SLACK_POST_CHANNEL_ID')).strip()
+SOURCE_CHANNEL_NAME = str(os.environ.get('SLACK_SOURCE_CHANNEL_NAME')).strip()
 LANGUAGE = str(os.environ.get('LANGUAGE') or "Japanese").strip()
 TIMEZONE_STR = str(os.environ.get('TIMEZONE') or 'Asia/Tokyo').strip()
 TEMPERATURE = float(os.environ.get('TEMPERATURE') or 0.3)
@@ -181,6 +182,8 @@ def runner():
     for channel in slack_client.channels:
         if DEBUG:
             print(channel["name"])
+        if channel["name"] != SOURCE_CHANNEL_NAME:
+            continue
         messages = slack_client.load_messages(channel["id"], start_time,
                                               end_time)
         if messages is None:
@@ -194,7 +197,7 @@ def runner():
             text = summarize("\n".join(splitted_messages), LANGUAGE)
             result_text.append(text)
 
-    title = (f"{start_time.strftime('%Y-%m-%d')} public channels summary\n\n")
+    title = (f"{start_time.strftime('%Y-%m-%d')} News summary\n\n")
 
     if DEBUG:
         print("\n".join(result_text))
